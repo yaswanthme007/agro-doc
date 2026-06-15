@@ -6,8 +6,9 @@ from pathlib import Path
 
 import requests
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 # Load .env from the backend directory
@@ -25,10 +26,16 @@ app = FastAPI(title="AgroDoc API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Safety net: convert any unhandled exception to a JSONResponse so it travels
+# through CORSMiddleware's send-wrapper and always gets CORS headers.
+@app.exception_handler(Exception)
+async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(status_code=500, content={"detail": f"Internal error: {exc}"})
 
 FEATHERLESS_URL   = "https://api.featherless.ai/v1/chat/completions"
 FEATHERLESS_MODEL = "Qwen/Qwen2.5-7B-Instruct"
@@ -58,15 +65,25 @@ def featherless_chat(messages: list, max_tokens: int = 1024, temperature: float 
                 "temperature": temperature,
                 "max_tokens": max_tokens,
             },
-            timeout=45,
+            timeout=60,
         )
         resp.raise_for_status()
     except requests.Timeout:
         raise HTTPException(status_code=504, detail="Featherless API timed out")
     except requests.HTTPError as e:
-        raise HTTPException(status_code=502, detail=f"Featherless API error: {e}")
+        body = ""
+        try:
+            body = e.response.text[:300]
+        except Exception:
+            pass
+        raise HTTPException(status_code=502, detail=f"Featherless API error {e.response.status_code}: {body}")
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Featherless connection error: {e}")
 
-    return resp.json()["choices"][0]["message"]["content"]
+    try:
+        return resp.json()["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, ValueError) as e:
+        raise HTTPException(status_code=502, detail=f"Unexpected Featherless response: {resp.text[:300]}")
 
 
 def strip_json_fences(text: str) -> str:
