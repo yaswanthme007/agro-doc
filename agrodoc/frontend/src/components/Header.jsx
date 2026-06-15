@@ -3,8 +3,8 @@ import { Leaf } from 'lucide-react'
 
 export default function Header() {
   return (
-    <header className="w-full py-6 px-4 mb-2">
-      <div className="max-w-2xl mx-auto flex flex-col items-center gap-2">
+    <header className="w-full py-7 px-4">
+      <div className="max-w-3xl mx-auto flex flex-col items-center gap-2">
         <motion.div
           className="flex items-center gap-3"
           initial={{ opacity: 0, y: -16 }}
@@ -15,7 +15,7 @@ export default function Header() {
             className="animate-sway origin-bottom"
             style={{ color: 'var(--color-forest-light)' }}
           >
-            <Leaf size={32} strokeWidth={1.8} />
+            <Leaf size={34} strokeWidth={1.7} />
           </motion.div>
           <h1
             className="text-4xl md:text-5xl font-bold tracking-tight"
@@ -26,8 +26,8 @@ export default function Header() {
         </motion.div>
 
         <motion.p
-          className="text-sm md:text-base font-medium tracking-wide uppercase"
-          style={{ color: 'var(--color-brown-mid)', letterSpacing: '0.12em' }}
+          className="text-xs md:text-sm font-semibold tracking-widest uppercase"
+          style={{ color: 'var(--color-brown-light)', letterSpacing: '0.14em' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25, duration: 0.4 }}
@@ -36,7 +36,7 @@ export default function Header() {
         </motion.p>
 
         <motion.div
-          className="mt-1 h-px w-20 rounded-full"
+          className="mt-1 h-px w-16 rounded-full"
           style={{ background: 'var(--color-cream-border)' }}
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}

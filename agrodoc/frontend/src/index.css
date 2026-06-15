@@ -24,6 +24,14 @@
 
 html { scroll-behavior: smooth; }
 
+/* Override any Vite scaffold #root constraints */
+#root {
+  width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
 body {
   font-family: var(--font-body);
   background-color: var(--color-cream);

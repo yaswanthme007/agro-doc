@@ -1,10 +1,13 @@
 import { useState, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Header from './components/Header'
+import StepProgress from './components/StepProgress'
+import HeroIntro from './components/HeroIntro'
 import UploadSection from './components/UploadSection'
 import ResultsSection from './components/ResultsSection'
 import TreatmentPlan from './components/TreatmentPlan'
 import ChatBox from './components/ChatBox'
+import AboutModel from './components/AboutModel'
 
 export const API_BASE_URL = 'http://localhost:8000'
 
@@ -35,6 +38,11 @@ export default function App() {
   const [isTranslating, setIsTranslating] = useState(false)
   const [isChatting, setIsChatting]       = useState(false)
   const [error, setError]                 = useState(null)
+
+  const currentStep = chatHistory.length > 0 ? 4
+                    : advice                  ? 3
+                    : prediction              ? 2
+                    : 1
 
   const handleFileSelect = useCallback((selectedFile) => {
     if (!selectedFile) return
@@ -70,9 +78,9 @@ export default function App() {
     setIsAdvising(true)
     setError(null)
     try {
-      const raw    = prediction.predicted_class
-      const parts  = raw.split(' - ')
-      const crop   = parts[0] ?? raw
+      const raw     = prediction.predicted_class
+      const parts   = raw.split(' - ')
+      const crop    = parts[0] ?? raw
       const disease = parts.slice(1).join(' - ') || raw
       const res = await fetch(`${API_BASE_URL}/advice`, {
         method: 'POST',
@@ -101,11 +109,10 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, target_language: lang.name.split('(')[0].trim() }),
         })
-        if (!res.ok) throw new Error(`Translation failed`)
+        if (!res.ok) throw new Error('Translation failed')
         return (await res.json()).translated_text
       }
       const translateList = (arr) => Promise.all(arr.map(translateField))
-
       const [summary, cause, steps, organic, tips] = await Promise.all([
         translateField(advice.problem_summary),
         translateField(advice.cause),
@@ -113,14 +120,7 @@ export default function App() {
         translateList(advice.organic_options),
         translateList(advice.prevention_tips),
       ])
-      setTranslated({
-        problem_summary: summary,
-        cause,
-        treatment_steps: steps,
-        organic_options: organic,
-        prevention_tips: tips,
-        urgency_level:   advice.urgency_level,
-      })
+      setTranslated({ problem_summary: summary, cause, treatment_steps: steps, organic_options: organic, prevention_tips: tips, urgency_level: advice.urgency_level })
     } catch (e) {
       setError(e.message)
     } finally {
@@ -141,7 +141,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ disease_context: context, question }),
       })
-      if (!res.ok) throw new Error(`Chat failed`)
+      if (!res.ok) throw new Error('Chat failed')
       const { answer } = await res.json()
       setChatHistory(h => [...h, { role: 'assistant', content: answer }])
     } catch {
@@ -154,9 +154,22 @@ export default function App() {
   const displayAdvice = translatedAdvice ?? advice
 
   return (
-    <div className="min-h-dvh flex flex-col">
+    <div className="w-full min-h-dvh flex flex-col">
       <Header />
-      <main className="flex-1 w-full max-w-2xl mx-auto px-4 pb-20 space-y-5">
+
+      <div className="w-full max-w-3xl mx-auto px-4">
+        <StepProgress currentStep={currentStep} />
+      </div>
+
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 pb-20 space-y-5">
+
+        <AnimatePresence>
+          {!preview && (
+            <motion.div key="hero" {...fadeUp}>
+              <HeroIntro />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <UploadSection
           preview={preview}
@@ -169,7 +182,8 @@ export default function App() {
         <AnimatePresence>
           {error && (
             <motion.div key="err" {...fadeUp}
-              className="rounded-2xl bg-red-50 border border-red-200 px-5 py-4 text-red-700 text-sm font-medium"
+              className="rounded-2xl border px-5 py-4 text-sm font-medium"
+              style={{ background: '#fef2f2', borderColor: '#fecaca', color: '#b91c1c' }}
             >
               ⚠ {error}
             </motion.div>
@@ -215,6 +229,8 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <AboutModel />
 
       </main>
     </div>
