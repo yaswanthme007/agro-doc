@@ -1,0 +1,230 @@
+{
+  "0": {
+    "raw": "Apple___Apple_scab",
+    "display": "Apple - Apple Scab",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "1": {
+    "raw": "Apple___Black_rot",
+    "display": "Apple - Black Rot",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "2": {
+    "raw": "Apple___Cedar_apple_rust",
+    "display": "Apple - Cedar Apple Rust",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "3": {
+    "raw": "Apple___healthy",
+    "display": "Apple - Healthy",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "4": {
+    "raw": "Blueberry___healthy",
+    "display": "Blueberry - Healthy",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "5": {
+    "raw": "Cherry_(including_sour)___Powdery_mildew",
+    "display": "Cherry (Including Sour) - Powdery Mildew",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "6": {
+    "raw": "Cherry_(including_sour)___healthy",
+    "display": "Cherry (Including Sour) - Healthy",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "7": {
+    "raw": "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot",
+    "display": "Corn (Maize) - Cercospora Leaf Spot Gray Leaf Spot",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "8": {
+    "raw": "Corn_(maize)___Common_rust_",
+    "display": "Corn (Maize) - Common Rust ",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "9": {
+    "raw": "Corn_(maize)___Northern_Leaf_Blight",
+    "display": "Corn (Maize) - Northern Leaf Blight",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "10": {
+    "raw": "Corn_(maize)___healthy",
+    "display": "Corn (Maize) - Healthy",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "11": {
+    "raw": "Grape___Black_rot",
+    "display": "Grape - Black Rot",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "12": {
+    "raw": "Grape___Esca_(Black_Measles)",
+    "display": "Grape - Esca (Black Measles)",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "13": {
+    "raw": "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
+    "display": "Grape - Leaf Blight (Isariopsis Leaf Spot)",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "14": {
+    "raw": "Grape___healthy",
+    "display": "Grape - Healthy",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "15": {
+    "raw": "Orange___Haunglongbing_(Citrus_greening)",
+    "display": "Orange - Haunglongbing (Citrus Greening)",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "16": {
+    "raw": "Peach___Bacterial_spot",
+    "display": "Peach - Bacterial Spot",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "17": {
+    "raw": "Peach___healthy",
+    "display": "Peach - Healthy",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "18": {
+    "raw": "Pepper,_bell___Bacterial_spot",
+    "display": "Pepper, Bell - Bacterial Spot",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "19": {
+    "raw": "Pepper,_bell___healthy",
+    "display": "Pepper, Bell - Healthy",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "20": {
+    "raw": "Potato___Early_blight",
+    "display": "Potato - Early Blight",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "21": {
+    "raw": "Potato___Late_blight",
+    "display": "Potato - Late Blight",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "22": {
+    "raw": "Potato___healthy",
+    "display": "Potato - Healthy",
+    "train_count": 122,
+    "val_count": 30
+  },
+  "23": {
+    "raw": "Raspberry___healthy",
+    "display": "Raspberry - Healthy",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "24": {
+    "raw": "Soybean___healthy",
+    "display": "Soybean - Healthy",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "25": {
+    "raw": "Squash___Powdery_mildew",
+    "display": "Squash - Powdery Mildew",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "26": {
+    "raw": "Strawberry___Leaf_scorch",
+    "display": "Strawberry - Leaf Scorch",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "27": {
+    "raw": "Strawberry___healthy",
+    "display": "Strawberry - Healthy",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "28": {
+    "raw": "Tomato___Bacterial_spot",
+    "display": "Tomato - Bacterial Spot",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "29": {
+    "raw": "Tomato___Early_blight",
+    "display": "Tomato - Early Blight",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "30": {
+    "raw": "Tomato___Late_blight",
+    "display": "Tomato - Late Blight",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "31": {
+    "raw": "Tomato___Leaf_Mold",
+    "display": "Tomato - Leaf Mold",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "32": {
+    "raw": "Tomato___Septoria_leaf_spot",
+    "display": "Tomato - Septoria Leaf Spot",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "33": {
+    "raw": "Tomato___Spider_mites Two-spotted_spider_mite",
+    "display": "Tomato - Spider Mites Two-Spotted Spider Mite",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "34": {
+    "raw": "Tomato___Target_Spot",
+    "display": "Tomato - Target Spot",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "35": {
+    "raw": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+    "display": "Tomato - Tomato Yellow Leaf Curl Virus",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "36": {
+    "raw": "Tomato___Tomato_mosaic_virus",
+    "display": "Tomato - Tomato Mosaic Virus",
+    "train_count": 175,
+    "val_count": 30
+  },
+  "37": {
+    "raw": "Tomato___healthy",
+    "display": "Tomato - Healthy",
+    "train_count": 175,
+    "val_count": 30
+  }
+}
