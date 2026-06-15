@@ -9,6 +9,7 @@ import ResultsSection from './components/ResultsSection'
 import TreatmentPlan from './components/TreatmentPlan'
 import ChatBox from './components/ChatBox'
 import AboutModel from './components/AboutModel'
+import ModelPerformance from './components/ModelPerformance'
 import Footer from './components/Footer'
 
 export const API_BASE_URL = 'http://localhost:8000'
@@ -300,6 +301,7 @@ export default function App() {
         </AnimatePresence>
 
         <AboutModel />
+        <ModelPerformance />
 
       </main>
 
