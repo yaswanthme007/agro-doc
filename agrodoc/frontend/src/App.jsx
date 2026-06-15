@@ -50,10 +50,23 @@ export default function App() {
   const [isChatting, setIsChatting]       = useState(false)
   const [error, setError]                 = useState(null)
 
-  const currentStep = chatHistory.length > 0 ? 4
+  // 5 = "past step 4" so step 4 renders as done (green checkmark).
+  const currentStep = chatHistory.length > 0 ? 5
                     : advice                  ? 3
                     : prediction              ? 2
                     : 1
+
+  const STEP_SECTION_IDS = {
+    1: 'section-upload',
+    2: 'section-diagnosis',
+    3: 'section-treatment',
+    4: 'section-chat',
+  }
+
+  const handleStepClick = useCallback((stepN) => {
+    const el = document.getElementById(STEP_SECTION_IDS[stepN])
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
 
   const handleReset = useCallback(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -210,7 +223,7 @@ export default function App() {
 
       {/* Step progress — full width, centered within max-w-6xl */}
       <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
-        <StepProgress currentStep={currentStep} />
+        <StepProgress currentStep={currentStep} onStepClick={handleStepClick} />
       </div>
 
       {/* Two-column layout on lg+; single column on mobile */}
@@ -228,13 +241,15 @@ export default function App() {
               )}
             </AnimatePresence>
 
-            <UploadSection
-              preview={preview}
-              onFileSelect={handleFileSelect}
-              onDiagnose={handlePredict}
-              isPredicting={isPredicting}
-              hasPrediction={!!prediction}
-            />
+            <div id="section-upload" style={{ scrollMarginTop: '1rem' }}>
+              <UploadSection
+                preview={preview}
+                onFileSelect={handleFileSelect}
+                onDiagnose={handlePredict}
+                isPredicting={isPredicting}
+                hasPrediction={!!prediction}
+              />
+            </div>
 
             {/* Error banner */}
             <AnimatePresence>
@@ -261,7 +276,7 @@ export default function App() {
 
             <AnimatePresence>
               {prediction && (
-                <motion.div key="results" {...fadeUp}>
+                <motion.div key="results" id="section-diagnosis" style={{ scrollMarginTop: '1rem' }} {...fadeUp}>
                   <ResultsSection
                     prediction={prediction}
                     preview={preview}
@@ -276,7 +291,7 @@ export default function App() {
 
             <AnimatePresence>
               {advice && (
-                <motion.div key="treatment" {...fadeUp}>
+                <motion.div key="treatment" id="section-treatment" style={{ scrollMarginTop: '1rem' }} {...fadeUp}>
                   <TreatmentPlan
                     advice={displayAdvice}
                     languages={LANGUAGES}
@@ -291,7 +306,7 @@ export default function App() {
 
             <AnimatePresence>
               {advice && (
-                <motion.div key="chat" {...fadeUp}>
+                <motion.div key="chat" id="section-chat" style={{ scrollMarginTop: '1rem' }} {...fadeUp}>
                   <ChatBox
                     messages={chatHistory}
                     onSend={handleChat}
