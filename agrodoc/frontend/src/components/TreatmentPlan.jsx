@@ -87,22 +87,23 @@ export default function TreatmentPlan({ advice, languages, language, onLanguageC
           ))}
         </select>
         {isTranslating && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <Loader2 size={14} className="animate-spin" style={{ color: 'var(--color-forest-mid)' }} />
-          </motion.div>
+          <motion.span
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="text-[11px] font-medium"
+            style={{ color: 'var(--color-forest-mid)' }}
+          >
+            translating…
+          </motion.span>
         )}
       </div>
 
-      {/* Body */}
-      <AnimatePresence mode="wait">
+      {/* Body — relative wrapper holds the content + optional translate overlay */}
+      <div className="relative">
         <motion.div
-          key={language.code}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
           className="px-5 md:px-6 py-5 space-y-6"
           style={{ background: 'white' }}
+          animate={{ opacity: isTranslating ? 0.2 : 1 }}
+          transition={{ duration: 0.2 }}
         >
           {/* Cause */}
           <Section icon={AlertTriangle} title="Cause" color="var(--color-terracotta)">
@@ -163,7 +164,26 @@ export default function TreatmentPlan({ advice, languages, language, onLanguageC
             </motion.ul>
           </Section>
         </motion.div>
-      </AnimatePresence>
+
+        {/* Translating overlay — sits above dimmed content */}
+        <AnimatePresence>
+          {isTranslating && (
+            <motion.div
+              className="absolute inset-0 flex flex-col items-center justify-center gap-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              style={{ background: 'rgba(250,246,239,0.88)', backdropFilter: 'blur(2px)' }}
+            >
+              <Loader2 size={22} className="animate-spin" style={{ color: 'var(--color-forest-mid)' }} />
+              <p className="text-sm font-semibold" style={{ color: 'var(--color-brown)' }}>
+                Translating to {language.name.split('(')[0].trim()}…
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* ── Reset ── */}
       <div className="px-5 md:px-6 py-3"

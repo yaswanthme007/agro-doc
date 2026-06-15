@@ -40,6 +40,8 @@ export default function App() {
   const [prediction, setPrediction]       = useState(null)
   const [advice, setAdvice]               = useState(null)
   const [translatedAdvice, setTranslated] = useState(null)
+  // Cache keyed by language code so switching back is instant with no re-fetch
+  const [translationCache, setTranslationCache] = useState({})
   const [language, setLanguage]           = useState(LANGUAGES[0])
   const [chatHistory, setChatHistory]     = useState([])
   const [isPredicting, setIsPredicting]   = useState(false)
@@ -60,6 +62,7 @@ export default function App() {
     setPrediction(null)
     setAdvice(null)
     setTranslated(null)
+    setTranslationCache({})
     setChatHistory([])
     setError(null)
     setLanguage(LANGUAGES[0])
@@ -72,6 +75,7 @@ export default function App() {
     setPrediction(null)
     setAdvice(null)
     setTranslated(null)
+    setTranslationCache({})
     setChatHistory([])
     setError(null)
     setLanguage(LANGUAGES[0])
@@ -117,6 +121,7 @@ export default function App() {
       }
       setAdvice(await res.json())
       setTranslated(null)
+      setTranslationCache({})   // new advice → invalidate all cached translations
     } catch (e) {
       setError(friendlyMessage(e, 'Treatment plan'))
     } finally {
@@ -126,31 +131,46 @@ export default function App() {
 
   const handleLanguageChange = useCallback(async (lang) => {
     setLanguage(lang)
-    if (lang.code === 'en' || !advice) { setTranslated(null); return }
-    setIsTranslating(true)
     setError(null)
+
+    // English: instant, zero API call
+    if (lang.code === 'en' || !advice) {
+      setTranslated(null)
+      return
+    }
+
+    // Cache hit: instant — no spinner, no network request
+    if (translationCache[lang.code]) {
+      setTranslated(translationCache[lang.code])
+      return
+    }
+
+    // Cache miss: one batch call translates every field in a single round-trip
+    setIsTranslating(true)
     try {
-      const translateField = async (text) => {
-        const res = await fetch(`${API_BASE_URL}/translate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, target_language: lang.name.split('(')[0].trim() }),
-        })
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}))
-          throw new Error(body.detail || `Server error (${res.status})`)
-        }
-        return (await res.json()).translated_text
+      const res = await fetch(`${API_BASE_URL}/translate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          target_language: lang.name.split('(')[0].trim(),
+          fields: {
+            problem_summary: advice.problem_summary,
+            cause:           advice.cause,
+            treatment_steps: advice.treatment_steps,
+            organic_options: advice.organic_options,
+            prevention_tips: advice.prevention_tips,
+          },
+        }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || `Server error (${res.status})`)
       }
-      const translateList = (arr) => Promise.all(arr.map(translateField))
-      const [summary, cause, steps, organic, tips] = await Promise.all([
-        translateField(advice.problem_summary),
-        translateField(advice.cause),
-        translateList(advice.treatment_steps),
-        translateList(advice.organic_options),
-        translateList(advice.prevention_tips),
-      ])
-      setTranslated({ problem_summary: summary, cause, treatment_steps: steps, organic_options: organic, prevention_tips: tips, urgency_level: advice.urgency_level })
+      const translated = await res.json()
+      // Keep urgency_level as English enum — it's used for styling, not display
+      const full = { ...translated, urgency_level: advice.urgency_level }
+      setTranslationCache(c => ({ ...c, [lang.code]: full }))
+      setTranslated(full)
     } catch (e) {
       setError(friendlyMessage(e, 'Translation'))
       setLanguage(LANGUAGES[0])
@@ -158,7 +178,7 @@ export default function App() {
     } finally {
       setIsTranslating(false)
     }
-  }, [advice])
+  }, [advice, translationCache])
 
   const handleChat = useCallback(async (question) => {
     if (!question.trim()) return

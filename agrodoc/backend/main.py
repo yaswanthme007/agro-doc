@@ -156,26 +156,40 @@ def advice(req: AdviceRequest):
 
 
 class TranslateRequest(BaseModel):
-    text: str
     target_language: str
+    # Batch mode: translate the full treatment-plan structure in one round-trip.
+    # Keys: problem_summary (str), cause (str), treatment_steps ([str]),
+    #        organic_options ([str]), prevention_tips ([str])
+    fields: dict
 
 
 @app.post("/translate")
-def translate(req: TranslateRequest):
+def translate(req: TranslateRequest) -> dict:
     system = (
         "You are a professional translator. "
-        "Translate exactly as given, preserving meaning and tone. "
-        "Output only the translated text — nothing else."
+        "You receive a JSON object and must translate every string value to the target language. "
+        "Rules: keep all JSON keys unchanged; translate each string element inside arrays; "
+        "return ONLY valid JSON — no markdown, no explanation, no extra text."
     )
-    user = f"Translate the following text to {req.target_language}:\n\n{req.text}"
+    user = (
+        f"Translate every text value in the JSON below to {req.target_language}. "
+        "Return only valid JSON with the same structure.\n\n"
+        + json.dumps(req.fields, ensure_ascii=False)
+    )
 
-    translated = featherless_chat(
+    raw = featherless_chat(
         [{"role": "system", "content": system}, {"role": "user", "content": user}],
-        max_tokens=2048,
-        temperature=0.1,
+        max_tokens=1200,
+        temperature=0.2,
     )
 
-    return {"translated_text": translated.strip()}
+    try:
+        return json.loads(strip_json_fences(raw))
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=502,
+            detail=f"LLM returned invalid JSON for translation: {raw[:300]}",
+        )
 
 
 class ChatRequest(BaseModel):
