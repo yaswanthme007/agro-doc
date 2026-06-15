@@ -41,7 +41,6 @@ export default function App() {
   const [prediction, setPrediction]       = useState(null)
   const [advice, setAdvice]               = useState(null)
   const [translatedAdvice, setTranslated] = useState(null)
-  // Cache keyed by language code so switching back is instant with no re-fetch
   const [translationCache, setTranslationCache] = useState({})
   const [language, setLanguage]           = useState(LANGUAGES[0])
   const [chatHistory, setChatHistory]     = useState([])
@@ -122,7 +121,7 @@ export default function App() {
       }
       setAdvice(await res.json())
       setTranslated(null)
-      setTranslationCache({})   // new advice → invalidate all cached translations
+      setTranslationCache({})
     } catch (e) {
       setError(friendlyMessage(e, 'Treatment plan'))
     } finally {
@@ -134,19 +133,16 @@ export default function App() {
     setLanguage(lang)
     setError(null)
 
-    // English: instant, zero API call
     if (lang.code === 'en' || !advice) {
       setTranslated(null)
       return
     }
 
-    // Cache hit: instant — no spinner, no network request
     if (translationCache[lang.code]) {
       setTranslated(translationCache[lang.code])
       return
     }
 
-    // Cache miss: one batch call translates every field in a single round-trip
     setIsTranslating(true)
     try {
       const res = await fetch(`${API_BASE_URL}/translate`, {
@@ -168,7 +164,6 @@ export default function App() {
         throw new Error(body.detail || `Server error (${res.status})`)
       }
       const translated = await res.json()
-      // Keep urgency_level as English enum — it's used for styling, not display
       const full = { ...translated, urgency_level: advice.urgency_level }
       setTranslationCache(c => ({ ...c, [lang.code]: full }))
       setTranslated(full)
@@ -213,97 +208,133 @@ export default function App() {
     <div className="w-full min-h-dvh flex flex-col">
       <Header />
 
-      <div className="w-full max-w-3xl mx-auto px-4">
+      {/* Step progress — full width, centered within max-w-6xl */}
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
         <StepProgress currentStep={currentStep} />
       </div>
 
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 pb-6 space-y-5">
+      {/* Two-column layout on lg+; single column on mobile */}
+      <div className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pb-10">
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8 lg:items-start">
 
-        <AnimatePresence>
-          {!preview && (
-            <motion.div key="hero" {...fadeUp}>
-              <HeroIntro />
-            </motion.div>
-          )}
-        </AnimatePresence>
+          {/* ── LEFT: main flow ──────────────────────────────────────────── */}
+          <main className="min-w-0 space-y-5 pb-6 lg:pb-10">
 
-        <UploadSection
-          preview={preview}
-          onFileSelect={handleFileSelect}
-          onDiagnose={handlePredict}
-          isPredicting={isPredicting}
-          hasPrediction={!!prediction}
-        />
+            <AnimatePresence>
+              {!preview && (
+                <motion.div key="hero" {...fadeUp}>
+                  <HeroIntro />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-        {/* Error banner */}
-        <AnimatePresence>
-          {error && (
-            <motion.div key="err" {...fadeUp}
-              className="rounded-2xl border px-4 py-3.5 flex items-start gap-3"
-              style={{ background: '#fef2f2', borderColor: '#fecaca' }}
+            <UploadSection
+              preview={preview}
+              onFileSelect={handleFileSelect}
+              onDiagnose={handlePredict}
+              isPredicting={isPredicting}
+              hasPrediction={!!prediction}
+            />
+
+            {/* Error banner */}
+            <AnimatePresence>
+              {error && (
+                <motion.div key="err" {...fadeUp}
+                  className="rounded-2xl border px-4 py-3.5 flex items-start gap-3"
+                  style={{ background: '#fef2f2', borderColor: '#fecaca' }}
+                >
+                  <AlertCircle size={17} style={{ color: '#b91c1c', flexShrink: 0, marginTop: 1 }} />
+                  <p className="text-sm font-medium flex-1 leading-snug" style={{ color: '#b91c1c' }}>
+                    {error}
+                  </p>
+                  <button
+                    onClick={() => setError(null)}
+                    className="flex-shrink-0 p-0.5 rounded-lg transition-colors"
+                    style={{ color: '#b91c1c' }}
+                    aria-label="Dismiss error"
+                  >
+                    <X size={15} />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {prediction && (
+                <motion.div key="results" {...fadeUp}>
+                  <ResultsSection
+                    prediction={prediction}
+                    preview={preview}
+                    onGetAdvice={handleAdvice}
+                    isAdvising={isAdvising}
+                    hasAdvice={!!advice}
+                    onReset={handleReset}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {advice && (
+                <motion.div key="treatment" {...fadeUp}>
+                  <TreatmentPlan
+                    advice={displayAdvice}
+                    languages={LANGUAGES}
+                    language={language}
+                    onLanguageChange={handleLanguageChange}
+                    isTranslating={isTranslating}
+                    onReset={handleReset}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {advice && (
+                <motion.div key="chat" {...fadeUp}>
+                  <ChatBox
+                    messages={chatHistory}
+                    onSend={handleChat}
+                    isChatting={isChatting}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <AboutModel />
+
+          </main>
+
+          {/* ── RIGHT: Model Performance sidebar ────────────────────────── */}
+          {/*
+            On lg+: sticky, scrollable independently within the viewport.
+            On mobile: stacks below the main flow, full-width.
+          */}
+          <aside
+            className="mt-6 lg:mt-0 lg:self-start lg:sticky lg:top-4"
+            style={{}}
+          >
+            {/* Scrollable container for very tall sidebar content */}
+            <div
+              className="lg:max-h-[calc(100vh-2.5rem)] lg:overflow-y-auto"
+              style={{ paddingBottom: '1.5rem' }}
             >
-              <AlertCircle size={17} style={{ color: '#b91c1c', flexShrink: 0, marginTop: 1 }} />
-              <p className="text-sm font-medium flex-1 leading-snug" style={{ color: '#b91c1c' }}>
-                {error}
-              </p>
-              <button
-                onClick={() => setError(null)}
-                className="flex-shrink-0 p-0.5 rounded-lg transition-colors"
-                style={{ color: '#b91c1c' }}
-                aria-label="Dismiss error"
+              {/* Sidebar panel with card-like border */}
+              <div
+                className="rounded-3xl p-4"
+                style={{
+                  background: 'var(--color-cream)',
+                  border: '1px solid var(--color-cream-border)',
+                  boxShadow: '0 1px 8px rgba(44,26,14,0.05)',
+                }}
               >
-                <X size={15} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <ModelPerformance />
+              </div>
+            </div>
+          </aside>
 
-        <AnimatePresence>
-          {prediction && (
-            <motion.div key="results" {...fadeUp}>
-              <ResultsSection
-                prediction={prediction}
-                preview={preview}
-                onGetAdvice={handleAdvice}
-                isAdvising={isAdvising}
-                hasAdvice={!!advice}
-                onReset={handleReset}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {advice && (
-            <motion.div key="treatment" {...fadeUp}>
-              <TreatmentPlan
-                advice={displayAdvice}
-                languages={LANGUAGES}
-                language={language}
-                onLanguageChange={handleLanguageChange}
-                isTranslating={isTranslating}
-                onReset={handleReset}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {advice && (
-            <motion.div key="chat" {...fadeUp}>
-              <ChatBox
-                messages={chatHistory}
-                onSend={handleChat}
-                isChatting={isChatting}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AboutModel />
-        <ModelPerformance />
-
-      </main>
+        </div>
+      </div>
 
       <Footer />
     </div>
