@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, AlertTriangle, Loader2, Leaf, Bug } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, Loader2, Leaf, Bug, Camera, RefreshCcw } from 'lucide-react'
 
 function parseClass(raw) {
   const parts = raw.split(' - ')
@@ -8,9 +8,9 @@ function parseClass(raw) {
 }
 
 function confidenceMeta(pct) {
-  if (pct >= 80) return { label: 'High confidence',              color: 'var(--color-forest-mid)',    bg: 'var(--color-forest-pale)' }
-  if (pct >= 50) return { label: 'Moderate — could be similar disease', color: 'var(--color-warning)',       bg: '#fef3c7' }
-  return              { label: 'Low — try a clearer photo',      color: 'var(--color-danger)',         bg: '#fee2e2' }
+  if (pct >= 80) return { label: 'High confidence',    color: 'var(--color-forest-mid)', bg: 'var(--color-forest-pale)' }
+  if (pct >= 50) return { label: 'Moderate confidence', color: '#b45309',                bg: '#fef3c7' }
+  return              { label: 'Low confidence',        color: '#b91c1c',                bg: '#fee2e2' }
 }
 
 function PredictionBar({ rank, label, confidence, delay }) {
@@ -43,12 +43,12 @@ function PredictionBar({ rank, label, confidence, delay }) {
               TOP
             </span>
           )}
-          <span className="text-xs font-semibold truncate" style={{ color: rank === 0 ? 'var(--color-brown)' : 'var(--color-brown-mid)' }}>
+          <span className="text-xs font-semibold truncate"
+                style={{ color: rank === 0 ? 'var(--color-brown)' : 'var(--color-brown-mid)' }}>
             {rank === 0 ? `${crop} · ${disease}` : label}
           </span>
         </div>
-        <span className="text-xs font-bold flex-shrink-0 tabular-nums"
-              style={{ color: barColor }}>
+        <span className="text-xs font-bold flex-shrink-0 tabular-nums" style={{ color: barColor }}>
           {pct}%
         </span>
       </div>
@@ -66,11 +66,12 @@ function PredictionBar({ rank, label, confidence, delay }) {
   )
 }
 
-export default function ResultsSection({ prediction, preview, onGetAdvice, isAdvising, hasAdvice }) {
+export default function ResultsSection({ prediction, preview, onGetAdvice, isAdvising, hasAdvice, onReset }) {
   const { predicted_class, confidence, top_3_predictions, is_healthy } = prediction
   const pct  = Math.round(confidence * 100)
   const meta = confidenceMeta(pct)
   const { crop, disease } = parseClass(predicted_class)
+  const isLowConfidence = pct < 50
 
   return (
     <section className="rounded-3xl overflow-hidden shadow-sm"
@@ -122,7 +123,6 @@ export default function ResultsSection({ prediction, preview, onGetAdvice, isAdv
               {predicted_class}
             </motion.h2>
 
-            {/* Crop / Disease tags */}
             <div className="flex gap-2 mt-2 flex-wrap">
               <span className="flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
                     style={{ background: 'rgba(30,77,43,0.08)', color: 'var(--color-forest-mid)' }}>
@@ -142,12 +142,11 @@ export default function ResultsSection({ prediction, preview, onGetAdvice, isAdv
       {/* ── Model Insights panel ── */}
       <div className="px-5 md:px-6 py-5 space-y-4"
            style={{ background: 'white', borderTop: '1px solid var(--color-cream-border)' }}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h3 className="text-xs font-bold uppercase tracking-wider"
               style={{ color: 'var(--color-brown-light)' }}>Model Insights</h3>
-          {/* Confidence pill */}
           <motion.span
-            className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+            className="text-[11px] font-bold px-2.5 py-1 rounded-full flex-shrink-0"
             style={{ background: meta.bg, color: meta.color }}
             initial={{ scale: 0 }} animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 280, delay: 0.2 }}
@@ -156,7 +155,27 @@ export default function ResultsSection({ prediction, preview, onGetAdvice, isAdv
           </motion.span>
         </div>
 
-        {/* Top-3 bars — always visible */}
+        {/* Low-confidence advisory */}
+        <AnimatePresence>
+          {isLowConfidence && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ delay: 0.35, duration: 0.3 }}
+              className="flex items-start gap-2.5 rounded-xl px-3.5 py-3"
+              style={{ background: '#fffbeb', border: '1px solid #fde68a' }}
+            >
+              <Camera size={14} style={{ color: '#92400e', flexShrink: 0, marginTop: 1 }} />
+              <p className="text-xs leading-relaxed" style={{ color: '#78350f' }}>
+                We're not fully sure about this result — try a clearer, well-lit photo
+                of a single leaf for better accuracy.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Top-3 bars */}
         <div className="space-y-3">
           {top_3_predictions.map((p, i) => (
             <PredictionBar
@@ -170,7 +189,7 @@ export default function ResultsSection({ prediction, preview, onGetAdvice, isAdv
         </div>
       </div>
 
-      {/* ── CTA ── */}
+      {/* ── CTA: Get Treatment Plan ── */}
       {!is_healthy && (
         <div className="px-5 md:px-6 py-4"
              style={{ background: 'rgba(30,77,43,0.03)', borderTop: '1px solid var(--color-cream-border)' }}>
@@ -198,6 +217,25 @@ export default function ResultsSection({ prediction, preview, onGetAdvice, isAdv
           </motion.button>
         </div>
       )}
+
+      {/* ── Reset ── */}
+      <div className="px-5 md:px-6 py-3"
+           style={{ borderTop: '1px solid var(--color-cream-border)', background: 'var(--color-cream-dark)' }}>
+        <motion.button
+          onClick={onReset}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
+          style={{
+            color: 'var(--color-brown-light)',
+            border: '1px solid var(--color-cream-border)',
+            background: 'white',
+          }}
+        >
+          <RefreshCcw size={13} />
+          Try another photo
+        </motion.button>
+      </div>
     </section>
   )
 }

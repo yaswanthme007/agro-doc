@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { AlertCircle, X } from 'lucide-react'
 import Header from './components/Header'
 import StepProgress from './components/StepProgress'
 import HeroIntro from './components/HeroIntro'
@@ -8,6 +9,7 @@ import ResultsSection from './components/ResultsSection'
 import TreatmentPlan from './components/TreatmentPlan'
 import ChatBox from './components/ChatBox'
 import AboutModel from './components/AboutModel'
+import Footer from './components/Footer'
 
 export const API_BASE_URL = 'http://localhost:8000'
 
@@ -23,6 +25,13 @@ export const fadeUp = {
   initial: { opacity: 0, y: 24 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } },
   exit:    { opacity: 0, y: -12, transition: { duration: 0.2 } },
+}
+
+const friendlyMessage = (e, context) => {
+  if (e.name === 'TypeError' || e.message === 'Failed to fetch') {
+    return "Couldn't reach the server — please make sure the backend is running and try again."
+  }
+  return e.message || `${context} failed, please try again.`
 }
 
 export default function App() {
@@ -44,6 +53,18 @@ export default function App() {
                     : prediction              ? 2
                     : 1
 
+  const handleReset = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setFile(null)
+    setPreview(null)
+    setPrediction(null)
+    setAdvice(null)
+    setTranslated(null)
+    setChatHistory([])
+    setError(null)
+    setLanguage(LANGUAGES[0])
+  }, [])
+
   const handleFileSelect = useCallback((selectedFile) => {
     if (!selectedFile) return
     setFile(selectedFile)
@@ -64,10 +85,13 @@ export default function App() {
       const form = new FormData()
       form.append('file', file)
       const res = await fetch(`${API_BASE_URL}/predict`, { method: 'POST', body: form })
-      if (!res.ok) throw new Error(`Prediction failed (${res.status})`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || `Server error (${res.status})`)
+      }
       setPrediction(await res.json())
     } catch (e) {
-      setError(e.message)
+      setError(friendlyMessage(e, 'Diagnosis'))
     } finally {
       setIsPredicting(false)
     }
@@ -87,11 +111,14 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ disease_name: disease, crop_name: crop }),
       })
-      if (!res.ok) throw new Error(`Advice failed (${res.status})`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || `Server error (${res.status})`)
+      }
       setAdvice(await res.json())
       setTranslated(null)
     } catch (e) {
-      setError(e.message)
+      setError(friendlyMessage(e, 'Treatment plan'))
     } finally {
       setIsAdvising(false)
     }
@@ -109,7 +136,10 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, target_language: lang.name.split('(')[0].trim() }),
         })
-        if (!res.ok) throw new Error('Translation failed')
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          throw new Error(body.detail || `Server error (${res.status})`)
+        }
         return (await res.json()).translated_text
       }
       const translateList = (arr) => Promise.all(arr.map(translateField))
@@ -122,7 +152,9 @@ export default function App() {
       ])
       setTranslated({ problem_summary: summary, cause, treatment_steps: steps, organic_options: organic, prevention_tips: tips, urgency_level: advice.urgency_level })
     } catch (e) {
-      setError(e.message)
+      setError(friendlyMessage(e, 'Translation'))
+      setLanguage(LANGUAGES[0])
+      setTranslated(null)
     } finally {
       setIsTranslating(false)
     }
@@ -141,11 +173,14 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ disease_context: context, question }),
       })
-      if (!res.ok) throw new Error('Chat failed')
+      if (!res.ok) throw new Error('Server error')
       const { answer } = await res.json()
       setChatHistory(h => [...h, { role: 'assistant', content: answer }])
-    } catch {
-      setChatHistory(h => [...h, { role: 'assistant', content: 'Sorry, could not get a response. Please try again.' }])
+    } catch (e) {
+      const msg = e.name === 'TypeError'
+        ? "Couldn't reach the server — please try again."
+        : 'Sorry, I could not get a response right now. Please try again.'
+      setChatHistory(h => [...h, { role: 'assistant', content: msg }])
     } finally {
       setIsChatting(false)
     }
@@ -161,7 +196,7 @@ export default function App() {
         <StepProgress currentStep={currentStep} />
       </div>
 
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 pb-20 space-y-5">
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 pb-6 space-y-5">
 
         <AnimatePresence>
           {!preview && (
@@ -179,13 +214,25 @@ export default function App() {
           hasPrediction={!!prediction}
         />
 
+        {/* Error banner */}
         <AnimatePresence>
           {error && (
             <motion.div key="err" {...fadeUp}
-              className="rounded-2xl border px-5 py-4 text-sm font-medium"
-              style={{ background: '#fef2f2', borderColor: '#fecaca', color: '#b91c1c' }}
+              className="rounded-2xl border px-4 py-3.5 flex items-start gap-3"
+              style={{ background: '#fef2f2', borderColor: '#fecaca' }}
             >
-              ⚠ {error}
+              <AlertCircle size={17} style={{ color: '#b91c1c', flexShrink: 0, marginTop: 1 }} />
+              <p className="text-sm font-medium flex-1 leading-snug" style={{ color: '#b91c1c' }}>
+                {error}
+              </p>
+              <button
+                onClick={() => setError(null)}
+                className="flex-shrink-0 p-0.5 rounded-lg transition-colors"
+                style={{ color: '#b91c1c' }}
+                aria-label="Dismiss error"
+              >
+                <X size={15} />
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -199,6 +246,7 @@ export default function App() {
                 onGetAdvice={handleAdvice}
                 isAdvising={isAdvising}
                 hasAdvice={!!advice}
+                onReset={handleReset}
               />
             </motion.div>
           )}
@@ -213,6 +261,7 @@ export default function App() {
                 language={language}
                 onLanguageChange={handleLanguageChange}
                 isTranslating={isTranslating}
+                onReset={handleReset}
               />
             </motion.div>
           )}
@@ -233,6 +282,8 @@ export default function App() {
         <AboutModel />
 
       </main>
+
+      <Footer />
     </div>
   )
 }

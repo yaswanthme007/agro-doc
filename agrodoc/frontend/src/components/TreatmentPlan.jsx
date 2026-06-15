@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sprout, FlaskConical, ShieldCheck, Globe, Loader2, AlertTriangle } from 'lucide-react'
+import { Sprout, FlaskConical, ShieldCheck, Globe, Loader2, AlertTriangle, RefreshCcw } from 'lucide-react'
 
 const URGENCY = {
   low:    { label: 'Low Urgency',    bg: 'var(--color-forest-pale)',   text: 'var(--color-forest)',    pulse: false },
@@ -29,7 +29,7 @@ function Section({ icon: Icon, title, color, children }) {
   )
 }
 
-export default function TreatmentPlan({ advice, languages, language, onLanguageChange, isTranslating }) {
+export default function TreatmentPlan({ advice, languages, language, onLanguageChange, isTranslating, onReset }) {
   if (!advice) return null
   const urgencyKey = advice.urgency_level?.toLowerCase() ?? 'medium'
   const urgency = URGENCY[urgencyKey] ?? URGENCY.medium
@@ -164,6 +164,25 @@ export default function TreatmentPlan({ advice, languages, language, onLanguageC
           </Section>
         </motion.div>
       </AnimatePresence>
+
+      {/* ── Reset ── */}
+      <div className="px-5 md:px-6 py-3"
+           style={{ borderTop: '1px solid var(--color-cream-border)', background: 'var(--color-cream-dark)' }}>
+        <motion.button
+          onClick={onReset}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full py-2 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
+          style={{
+            color: 'var(--color-brown-light)',
+            border: '1px solid var(--color-cream-border)',
+            background: 'white',
+          }}
+        >
+          <RefreshCcw size={13} />
+          Try another photo
+        </motion.button>
+      </div>
     </section>
   )
 }
