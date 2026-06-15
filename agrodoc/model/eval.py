@@ -42,6 +42,7 @@ HISTORY = {
     "val_loss":   [0.6075, 0.3002, 0.5855],
     "val_acc":    [83.6,   90.8,   82.8],
 }
+BEST_EPOCH = 2  # epoch with highest val accuracy (90.8%)
 
 
 class ValDataset(Dataset):
@@ -67,7 +68,7 @@ class ValDataset(Dataset):
         return enc["pixel_values"].squeeze(0), label
 
 
-def plot_curves(history, save_path):
+def plot_curves(history, save_path, best_epoch=None):
     epochs = range(1, len(history["train_loss"]) + 1)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
     ax1.plot(epochs, history["train_loss"], "b-o", label="Train")
@@ -76,6 +77,15 @@ def plot_curves(history, save_path):
     ax1.legend(); ax1.grid(True)
     ax2.plot(epochs, history["train_acc"], "b-o", label="Train")
     ax2.plot(epochs, history["val_acc"],   "r-o", label="Val")
+    if best_epoch is not None:
+        best_acc = history["val_acc"][best_epoch - 1]
+        ax2.axvline(x=best_epoch, color="green", linestyle="--", alpha=0.7, label=f"Best (ep {best_epoch})")
+        ax2.annotate(
+            f"Best: {best_acc:.1f}%",
+            xy=(best_epoch, best_acc),
+            xytext=(best_epoch + 0.1, best_acc - 3),
+            fontsize=8, color="green",
+        )
     ax2.set_title("Accuracy per Epoch (%)"); ax2.set_xlabel("Epoch"); ax2.set_ylabel("Accuracy (%)")
     ax2.legend(); ax2.grid(True)
     plt.tight_layout()
@@ -187,7 +197,7 @@ def main():
     print("Model loaded.")
 
     # Training curves (from recorded history)
-    plot_curves(HISTORY, SAVE_DIR / "training_curves.png")
+    plot_curves(HISTORY, SAVE_DIR / "training_curves.png", best_epoch=BEST_EPOCH)
 
     # Val predictions
     print("\nBuilding validation dataset...")

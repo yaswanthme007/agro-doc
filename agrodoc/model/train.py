@@ -188,7 +188,7 @@ def plot_confusion_matrix(y_true, y_pred, class_names, save_path):
     ax.set_yticklabels(short, fontsize=6)
     ax.set_xlabel("Predicted")
     ax.set_ylabel("True")
-    ax.set_title("Confusion Matrix — Validation Set")
+    ax.set_title("Confusion Matrix - Validation Set")
     plt.tight_layout()
     plt.savefig(save_path, dpi=120, bbox_inches="tight")
     plt.close()
@@ -263,7 +263,7 @@ def run_sample_inference(model, processor, val_dir, idx_to_raw, idx_to_display, 
             confidence = probs[pred_idx].item() * 100
 
             pred_label = idx_to_display.get(pred_idx, idx_to_raw.get(pred_idx, str(pred_idx)))
-            match = "✓" if pred_idx == true_idx else "✗"
+            match = "[OK]" if pred_idx == true_idx else "[XX]"
             print(
                 f"  {match} True: {true_label:<40} "
                 f"Pred: {pred_label:<40} "
@@ -328,6 +328,8 @@ def main():
     criterion = nn.CrossEntropyLoss()
 
     history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": []}
+    best_val_acc  = -1.0
+    best_epoch    = -1
 
     # --- Training loop ---
     print(f"\nFine-tuning for {EPOCHS} epoch(s) on {DEVICE} ...")
@@ -343,8 +345,22 @@ def main():
         val_loss,   val_acc   = run_epoch(model, val_loader,   criterion, optimizer, DEVICE, train=False)
 
         elapsed = time.time() - epoch_start
+
+        # Best-checkpoint saving
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            best_epoch   = epoch
+            model.save_pretrained(SAVE_DIR)
+            processor.save_pretrained(SAVE_DIR)
+            print(f"\n  [BEST] New best val acc {val_acc:.2f}% at epoch {epoch} — checkpoint saved.")
+        else:
+            print(
+                f"\n  [----] Val acc {val_acc:.2f}% did not improve from best "
+                f"{best_val_acc:.2f}% (epoch {best_epoch})."
+            )
+
         print(
-            f"\n  >> Epoch {epoch} done in {elapsed/60:.1f} min | "
+            f"  >> Epoch {epoch} done in {elapsed/60:.1f} min | "
             f"Train Loss: {train_loss:.4f}  Acc: {train_acc:.1f}% | "
             f"Val Loss:   {val_loss:.4f}  Acc: {val_acc:.1f}%"
         )
@@ -356,11 +372,13 @@ def main():
 
     total_time = time.time() - total_start
     print(f"\nTotal training time: {total_time/60:.1f} min")
+    print(f"Best checkpoint: epoch {best_epoch} with val acc {best_val_acc:.2f}%")
+    print(f"Best model already saved -> {SAVE_DIR}")
 
-    # --- Save model ---
-    model.save_pretrained(SAVE_DIR)
-    processor.save_pretrained(SAVE_DIR)
-    print(f"Model + processor saved -> {SAVE_DIR}")
+    # Reload best checkpoint for evaluation
+    print("\nReloading best checkpoint for final evaluation...")
+    model = AutoModelForImageClassification.from_pretrained(SAVE_DIR)
+    model.to(DEVICE)
 
     # --- Plots & metrics ---
     plot_curves(history, SAVE_DIR / "training_curves.png")
@@ -369,10 +387,10 @@ def main():
     y_true, y_pred = collect_predictions(model, val_loader, DEVICE)
 
     plot_confusion_matrix(y_true, y_pred, class_names, SAVE_DIR / "confusion_matrix.png")
-    metrics = save_metrics(y_true, y_pred, class_names, history["val_acc"][-1], SAVE_DIR)
+    metrics = save_metrics(y_true, y_pred, class_names, best_val_acc, SAVE_DIR)
 
     print(f"\n{'='*60}")
-    print("Final Results")
+    print(f"Final Results (best checkpoint: epoch {best_epoch})")
     print("="*60)
     print(f"  Val Accuracy : {metrics['final_val_accuracy']:.2f}%")
     print(f"  Macro F1     : {metrics['macro_f1']:.4f}")
