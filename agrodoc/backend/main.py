@@ -8,7 +8,7 @@ import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 # Load .env from the backend directory
@@ -212,3 +212,78 @@ def chat(req: ChatRequest):
     )
 
     return {"answer": answer.strip()}
+
+
+# ---------------------------------------------------------------------------
+# Model stats endpoints
+# ---------------------------------------------------------------------------
+_SAVED_DIR    = Path(__file__).parent.parent / "model" / "saved_model"
+_METRICS_PATH = _SAVED_DIR / "metrics.json"
+
+# Training history recorded from the actual training run (see model/eval.py)
+_TRAINING_HISTORY = {
+    "epochs":     [1, 2, 3],
+    "train_loss": [0.2866, 0.2222, 0.1950],
+    "train_acc":  [91.4,   93.2,   94.5],
+    "val_loss":   [0.6075, 0.3002, 0.5855],
+    "val_acc":    [83.6,   90.8,   82.8],
+    "best_epoch": 2,
+}
+
+
+def _fmt_class(raw: str) -> str:
+    """'Apple___Apple_scab' → 'Apple - Apple scab'"""
+    parts = raw.split("___")
+    if len(parts) == 2:
+        crop    = parts[0].replace("_", " ")
+        disease = parts[1].replace("_", " ")
+        return f"{crop} - {disease}"
+    return raw.replace("_", " ")
+
+
+@app.get("/model-stats")
+def model_stats():
+    if not _METRICS_PATH.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="metrics.json not found — run model/eval.py first",
+        )
+    with open(_METRICS_PATH) as f:
+        metrics = json.load(f)
+
+    per_class_f1 = sorted(
+        [
+            {
+                "class":     _fmt_class(cls),
+                "f1":        round(d["f1"],        4),
+                "precision": round(d["precision"], 4),
+                "recall":    round(d["recall"],    4),
+            }
+            for cls, d in metrics["per_class"].items()
+        ],
+        key=lambda x: x["f1"],
+        reverse=True,
+    )
+
+    return {
+        "summary": {
+            "val_accuracy":    round(metrics["final_val_accuracy"], 2),
+            "macro_f1":        round(metrics["macro_f1"],           4),
+            "macro_precision": round(metrics["macro_precision"],    4),
+            "macro_recall":    round(metrics["macro_recall"],       4),
+            "num_classes":  38,
+            "num_crops":    14,
+            "train_images": 6650,
+            "val_images":   1140,
+        },
+        "training_history": _TRAINING_HISTORY,
+        "per_class_f1": per_class_f1,
+    }
+
+
+@app.get("/model-stats/confusion-matrix")
+def confusion_matrix_img():
+    p = _SAVED_DIR / "confusion_matrix.png"
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="confusion_matrix.png not found")
+    return FileResponse(str(p), media_type="image/png")
