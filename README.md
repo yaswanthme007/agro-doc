@@ -6,6 +6,16 @@ AgroDoc is a full-stack AI application that lets smallholder farmers photograph 
 
 ---
 
+## Demo Video
+
+▶️ **[Watch the AgroDoc demo on YouTube](https://youtu.be/WOfE7avOHX8)**
+
+A short walkthrough of the full flow: upload a leaf → AI diagnosis with live model-performance charts → structured treatment plan → instant translation to Hindi → contextual follow-up chat.
+
+*(Prefer to run it yourself? See the [Setup & Run](#setup--run) section — the trained model is included, so it works out of the box.)*
+
+---
+
 ## Problem Statement
 
 Smallholder farmers lose **20–40% of their annual crop yield** to plant diseases and pests that go undiagnosed until it is too late. The primary bottleneck is access: certified agronomists are concentrated in urban centres, extension services are under-resourced, and a single farm visit can cost more than a week's income. By the time a farmer reaches an expert, the infection has already spread.
