@@ -12,7 +12,7 @@ import AboutModel from './components/AboutModel'
 import ModelPerformance from './components/ModelPerformance'
 import Footer from './components/Footer'
 
-export const API_BASE_URL = 'http://localhost:8000'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://opyashme-agrodoc-backend.hf.space'
 
 export const LANGUAGES = [
   { code: 'en', name: 'English' },
